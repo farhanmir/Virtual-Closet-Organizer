@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (section === sectionToShow) {
                     element.classList.remove('hidden');
                     if (section === 'items-section') {
-                        showItemsSection();
+                        updateItemsSection();
                     }
                 } else {
                     element.classList.add('hidden');
@@ -65,21 +65,30 @@ function toggleSections(sectionToShow) {
     }
 }
 
-document.getElementById('submit-item').addEventListener('click', function() {
-    const fileInput = document.getElementById('file-input');
+document.getElementById('submit-item').addEventListener('click', function(event) {
+    event.preventDefault();
+    const imageSrc = document.getElementById('file-input').files[0] ? URL.createObjectURL(document.getElementById('file-input').files[0]) : '';
     const description = document.getElementById('description').value;
-    const color = document.getElementById('color').value;
     const category = document.getElementById('category').value;
-    
-    if (fileInput.files.length > 0 && description && color) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            addItemToGrid(e.target.result, description, category, color);
-            resetUploadForm();
-        };
-        reader.readAsDataURL(fileInput.files[0]);
+    const color = document.getElementById('color').value;
+
+    if (imageSrc && description && category && color) {
+        addItemToGrid(imageSrc, description, category, color);
+        
+        // Save to local storage
+        const items = JSON.parse(localStorage.getItem('items') || '[]');
+        items.push({ imageSrc, description, category, color });
+        localStorage.setItem('items', JSON.stringify(items));
+
+        // Clear form fields
+        document.getElementById('file-input').value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('category').value = '';
+        document.getElementById('color').value = '';
+
+        updateItemsSection();
     } else {
-        alert('Please provide an image, description, and color.');
+        alert('Please fill in all fields');
     }
 });
 
@@ -105,8 +114,11 @@ document.getElementById('create-packing-list').addEventListener('click', functio
 });
 
 function addItemToGrid(imageSrc, description, category, color) {
+    console.log('Adding item:', description); // Add this line for debugging
+
     const itemsGrid = document.getElementById('items-grid');
     const item = document.createElement('div');
+    item.classList.add('item-card');
     item.innerHTML = `
         <img src="${imageSrc}" alt="${description}">
         <p>${description}</p>
@@ -114,25 +126,24 @@ function addItemToGrid(imageSrc, description, category, color) {
         <p>Color: <span style="display:inline-block; width:20px; height:20px; background-color:${color};"></span> ${color}</p>
         <button class="delete-item">Delete</button>
     `;
-    item.setAttribute('draggable', 'true');
-    item.addEventListener('dragstart', handleDragStart);
-    item.addEventListener('dragend', handleDragEnd);
     
     // Add delete functionality
-    item.querySelector('.delete-item').addEventListener('click', function() {
+    const deleteButton = item.querySelector('.delete-item');
+    deleteButton.addEventListener('click', function(event) {
+        event.stopPropagation();
         if (confirm('Are you sure you want to delete this item?')) {
             item.remove();
-            // Remove from local storage
             const items = JSON.parse(localStorage.getItem('items') || '[]');
-            const updatedItems = items.filter(i => i.description !== description);
+            const updatedItems = items.filter(i => 
+                i.imageSrc !== imageSrc || 
+                i.description !== description || 
+                i.category !== category || 
+                i.color !== color
+            );
             localStorage.setItem('items', JSON.stringify(updatedItems));
+            updateItemsSection();
         }
     });
-    
-    // Save to local storage
-    const items = JSON.parse(localStorage.getItem('items') || '[]');
-    items.push({ imageSrc, description, category, color });
-    localStorage.setItem('items', JSON.stringify(items));
     
     itemsGrid.appendChild(item);
 }
@@ -403,6 +414,7 @@ function saveAIOutfit(outfit) {
 function addItemToGrid(imageSrc, description, category, color) {
     const itemsGrid = document.getElementById('items-grid');
     const item = document.createElement('div');
+    item.classList.add('item-card');
     item.innerHTML = `
         <img src="${imageSrc}" alt="${description}">
         <p>${description}</p>
@@ -410,25 +422,29 @@ function addItemToGrid(imageSrc, description, category, color) {
         <p>Color: <span style="display:inline-block; width:20px; height:20px; background-color:${color};"></span> ${color}</p>
         <button class="delete-item">Delete</button>
     `;
-    item.setAttribute('draggable', 'true');
-    item.addEventListener('dragstart', handleDragStart);
-    item.addEventListener('dragend', handleDragEnd);
     
     // Add delete functionality
-    item.querySelector('.delete-item').addEventListener('click', function() {
+    const deleteButton = item.querySelector('.delete-item');
+    deleteButton.addEventListener('click', function(event) {
+        event.stopPropagation(); // Prevent event from bubbling up
         if (confirm('Are you sure you want to delete this item?')) {
+            // Remove from DOM
             item.remove();
+            
             // Remove from local storage
             const items = JSON.parse(localStorage.getItem('items') || '[]');
-            const updatedItems = items.filter(i => i.description !== description);
+            const updatedItems = items.filter(i => 
+                i.imageSrc !== imageSrc || 
+                i.description !== description || 
+                i.category !== category || 
+                i.color !== color
+            );
             localStorage.setItem('items', JSON.stringify(updatedItems));
+            
+            // Update the items section
+            updateItemsSection();
         }
     });
-    
-    // Save to local storage
-    const items = JSON.parse(localStorage.getItem('items') || '[]');
-    items.push({ imageSrc, description, category, color });
-    localStorage.setItem('items', JSON.stringify(items));
     
     itemsGrid.appendChild(item);
 }
@@ -535,3 +551,4 @@ function showItemsSection() {
 document.getElementById('add-first-item').addEventListener('click', function() {
     toggleSections('upload-section');
 });
+
