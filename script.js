@@ -14,17 +14,21 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function toggleSections(sectionToShow) {
+        console.log(`Toggling section: ${sectionToShow}`); // Debug log
+        const sections = ['home-section', 'upload-section', 'items-section', 'planner-section', 'packing-section', 'ai-outfits-section'];
         sections.forEach(section => {
             const element = document.getElementById(section);
             if (element) {
                 if (section === sectionToShow) {
                     element.classList.remove('hidden');
-                    if (section === 'items-section') {
-                        updateItemsSection();
+                    if (section === 'planner-section') {
+                        initializeCalendar();
                     }
                 } else {
                     element.classList.add('hidden');
                 }
+            } else {
+                console.error(`Section with id ${section} not found`);
             }
         });
 
@@ -44,6 +48,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     } else {
         console.error('Get Started button not found');
+    }
+
+    const createOutfitBtn = document.getElementById('create-outfit');
+    if (createOutfitBtn) {
+        createOutfitBtn.addEventListener('click', function() {
+            console.log('Create Outfit button clicked'); // Debug log
+            const outfitCreator = document.getElementById('outfit-creator');
+            if (outfitCreator) {
+                outfitCreator.style.display = 'block';
+                populateAvailableItems();
+            } else {
+                console.error('Outfit creator element not found');
+            }
+        });
+    } else {
+        console.error('Create Outfit button not found');
     }
 });
 
@@ -552,3 +572,54 @@ document.getElementById('add-first-item').addEventListener('click', function() {
     toggleSections('upload-section');
 });
 
+function initializeCalendar() {
+    const calendarEl = document.getElementById('calendar');
+    if (calendarEl && !calendarEl._calendar) {
+        console.log('Initializing calendar'); // Debug log
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            height: 'auto',
+            events: JSON.parse(localStorage.getItem('calendarEvents') || '[]'),
+            eventClick: function(info) {
+                if (confirm(`Delete event '${info.event.title}'?`)) {
+                    info.event.remove();
+                    saveCalendarEvents(calendar);
+                }
+            },
+            eventDrop: function(info) {
+                saveCalendarEvents(calendar);
+            },
+            eventResize: function(info) {
+                saveCalendarEvents(calendar);
+            }
+        });
+        calendar.render();
+        calendarEl._calendar = calendar;
+    } else if (calendarEl && calendarEl._calendar) {
+        console.log('Calendar already initialized, re-rendering'); // Debug log
+        calendarEl._calendar.render();
+    } else {
+        console.error('Calendar element not found');
+    }
+}
+
+function populateAvailableItems() {
+    const availableItems = document.getElementById('available-items');
+    if (availableItems) {
+        availableItems.innerHTML = '';
+        const items = JSON.parse(localStorage.getItem('items') || '[]');
+        items.forEach(item => {
+            const itemElement = createItemElement(item);
+            itemElement.draggable = true;
+            itemElement.addEventListener('dragstart', handleDragStart);
+            availableItems.appendChild(itemElement);
+        });
+    } else {
+        console.error('Available items element not found');
+    }
+}
