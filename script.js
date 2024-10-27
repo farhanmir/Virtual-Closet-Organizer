@@ -368,8 +368,8 @@ function saveCalendarEvents(calendar) {
     const events = calendar.getEvents().map(event => ({
         title: event.title,
         start: event.startStr,
-        end: event.endStr,
-        allDay: event.allDay
+        allDay: event.allDay,
+        extendedProps: event.extendedProps
     }));
     localStorage.setItem('calendarEvents', JSON.stringify(events));
 }
@@ -411,167 +411,55 @@ function createOutfitElement(outfit) {
         <img src="${outfit.pant.imageSrc}" alt="Pants">
         <img src="${outfit.shoes.imageSrc}" alt="Shoes">
         <img src="${outfit.accessory.imageSrc}" alt="Accessory">
-        <button class="save-outfit">Save Outfit</button>
+        <button class="save-to-calendar">Save to Calendar</button>
     `;
-    outfitElement.querySelector('.save-outfit').addEventListener('click', () => saveAIOutfit(outfit));
+    outfitElement.querySelector('.save-to-calendar').addEventListener('click', () => saveOutfitToCalendar(outfit));
     return outfitElement;
 }
 
-function saveAIOutfit(outfit) {
-    const outfitName = prompt('Enter a name for this outfit:');
-    if (outfitName) {
-        const outfits = JSON.parse(localStorage.getItem('outfits') || '[]');
-        outfits.push({
-            name: outfitName,
-            items: [outfit.shirt, outfit.pant, outfit.shoes, outfit.accessory]
-        });
-        localStorage.setItem('outfits', JSON.stringify(outfits));
-        alert('Outfit saved successfully!');
-    }
-}
-
-// Modify the existing addItemToGrid function to include background removal
-function addItemToGrid(imageSrc, description, category, color) {
-    const itemsGrid = document.getElementById('items-grid');
-    const item = document.createElement('div');
-    item.classList.add('item-card');
-    item.innerHTML = `
-        <img src="${imageSrc}" alt="${description}">
-        <p>${description}</p>
-        <p>${category}</p>
-        <p>Color: <span style="display:inline-block; width:20px; height:20px; background-color:${color};"></span> ${color}</p>
-        <button class="delete-item">Delete</button>
-    `;
-    
-    // Add delete functionality
-    const deleteButton = item.querySelector('.delete-item');
-    deleteButton.addEventListener('click', function(event) {
-        event.stopPropagation(); // Prevent event from bubbling up
-        if (confirm('Are you sure you want to delete this item?')) {
-            // Remove from DOM
-            item.remove();
-            
-            // Remove from local storage
-            const items = JSON.parse(localStorage.getItem('items') || '[]');
-            const updatedItems = items.filter(i => 
-                i.imageSrc !== imageSrc || 
-                i.description !== description || 
-                i.category !== category || 
-                i.color !== color
-            );
-            localStorage.setItem('items', JSON.stringify(updatedItems));
-            
-            // Update the items section
-            updateItemsSection();
-        }
-    });
-    
-    itemsGrid.appendChild(item);
-}
-
-// Placeholder function for background removal (you'll need to implement this)
-function removeBackground(imageSrc) {
-    // Implement background removal logic here
-    // For now, we'll just return the original image
-    return imageSrc;
-}
-
-let bodyPixModel;
-
-async function loadBodyPixModel() {
-    bodyPixModel = await bodyPix.load();
-}
-
-document.addEventListener('DOMContentLoaded', async function() {
-    // ... existing code ...
-    await loadBodyPixModel();
-    // ... existing code ...
-});
-
-document.getElementById('remove-background').addEventListener('click', async function() {
-    const fileInput = document.getElementById('file-input');
-    if (fileInput.files.length > 0) {
-        const img = await createImageBitmap(fileInput.files[0]);
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        // Simple background removal (replace with white)
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            if (r > 240 && g > 240 && b > 240) {
-                data[i + 3] = 0; // Set alpha to 0 for white pixels
+function saveOutfitToCalendar(outfit) {
+    const date = prompt('Enter date for this outfit (MM-DD-YYYY):');
+    if (date) {
+        const [month, day, year] = date.split('-');
+        const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        
+        const outfitName = prompt('Enter a name for this outfit:');
+        if (outfitName) {
+            const calendarEl = document.getElementById('calendar');
+            if (calendarEl && calendarEl._calendar) {
+                const calendar = calendarEl._calendar;
+                const event = {
+                    title: outfitName,
+                    start: formattedDate,
+                    allDay: true,
+                    extendedProps: {
+                        outfit: outfit
+                    }
+                };
+                
+                calendar.addEvent(event);
+                saveCalendarEvents(calendar);
+                alert('Outfit added to calendar!');
+            } else {
+                console.error('Calendar not initialized');
+                initializeCalendar(); // Try to initialize the calendar
+                alert('Please try adding the outfit again. The calendar has been reinitialized.');
             }
         }
-        ctx.putImageData(imageData, 0, 0);
-
-        const dataURL = canvas.toDataURL('image/png');
-        const previewImg = document.createElement('img');
-        previewImg.src = dataURL;
-        previewImg.style.maxWidth = '300px';
-        previewImg.style.maxHeight = '300px';
-        const previewContainer = document.getElementById('preview-container') || document.createElement('div');
-        previewContainer.id = 'preview-container';
-        previewContainer.innerHTML = '';
-        previewContainer.appendChild(previewImg);
-        fileInput.parentNode.insertBefore(previewContainer, fileInput.nextSibling);
-    } else {
-        alert('Please select an image first.');
-    }
-});
-
-document.getElementById('create-outfit').addEventListener('click', function() {
-    const packingItemsDiv = document.getElementById('packing-items');
-    packingItemsDiv.innerHTML = ''; // Clear existing items
-    const items = document.querySelectorAll('#items-grid div');
-    items.forEach(item => {
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        const label = document.createElement('label');
-        label.innerHTML = item.querySelector('img').outerHTML;
-        packingItemsDiv.appendChild(checkbox);
-        packingItemsDiv.appendChild(label);
-    });
-});
-
-function updateItemsSection() {
-    const itemsGrid = document.getElementById('items-grid');
-    const emptyState = document.querySelector('.empty-state');
-    const items = JSON.parse(localStorage.getItem('items') || '[]');
-
-    if (items.length === 0) {
-        itemsGrid.classList.add('hidden');
-        emptyState.classList.remove('hidden');
-    } else {
-        itemsGrid.classList.remove('hidden');
-        emptyState.classList.add('hidden');
-        displayItems();
     }
 }
 
-function displayItems() {
-    const itemsGrid = document.getElementById('items-grid');
-    itemsGrid.innerHTML = '';
-    const items = JSON.parse(localStorage.getItem('items') || '[]');
-    items.forEach(item => addItemToGrid(item.imageSrc, item.description, item.category, item.color));
+function saveCalendarEvents(calendar) {
+    const events = calendar.getEvents().map(event => ({
+        title: event.title,
+        start: event.startStr,
+        allDay: event.allDay,
+        extendedProps: event.extendedProps
+    }));
+    localStorage.setItem('calendarEvents', JSON.stringify(events));
 }
 
-// Call this function when the items section is shown
-function showItemsSection() {
-    updateItemsSection();
-}
-
-// Add event listener for the "Add Your First Item" button
-document.getElementById('add-first-item').addEventListener('click', function() {
-    toggleSections('upload-section');
-});
-
+// Modify the existing initializeCalendar function to handle outfit events
 function initializeCalendar() {
     const calendarEl = document.getElementById('calendar');
     if (calendarEl && !calendarEl._calendar) {
@@ -584,18 +472,39 @@ function initializeCalendar() {
                 right: 'dayGridMonth,timeGridWeek,timeGridDay'
             },
             height: 'auto',
+            editable: true, // Enable drag and drop
             events: JSON.parse(localStorage.getItem('calendarEvents') || '[]'),
+            eventContent: function(arg) {
+                if (arg.event.extendedProps.outfit) {
+                    return {
+                        html: `
+                            <div class="fc-content">
+                                <span class="fc-title">${arg.event.title}</span>
+                                <div class="outfit-preview">
+                                    <img src="${arg.event.extendedProps.outfit.shirt.imageSrc}" alt="Shirt" style="width: 20px; height: 20px;">
+                                    <img src="${arg.event.extendedProps.outfit.pant.imageSrc}" alt="Pants" style="width: 20px; height: 20px;">
+                                    <img src="${arg.event.extendedProps.outfit.shoes.imageSrc}" alt="Shoes" style="width: 20px; height: 20px;">
+                                    <img src="${arg.event.extendedProps.outfit.accessory.imageSrc}" alt="Accessory" style="width: 20px; height: 20px;">
+                                </div>
+                            </div>
+                        `
+                    };
+                }
+            },
             eventClick: function(info) {
-                if (confirm(`Delete event '${info.event.title}'?`)) {
+                if (confirm(`Delete outfit "${info.event.title}" from ${info.event.startStr}?`)) {
                     info.event.remove();
                     saveCalendarEvents(calendar);
                 }
             },
             eventDrop: function(info) {
+                // This function is called when an event is dragged and dropped
+                console.log('Event dropped:', info.event.title, 'to', info.event.startStr);
                 saveCalendarEvents(calendar);
             },
-            eventResize: function(info) {
-                saveCalendarEvents(calendar);
+            eventDragStop: function(info) {
+                // This function is called when dragging stops (whether dropped on a valid date or not)
+                console.log('Drag stopped:', info.event.title);
             }
         });
         calendar.render();
@@ -623,3 +532,4 @@ function populateAvailableItems() {
         console.error('Available items element not found');
     }
 }
+
