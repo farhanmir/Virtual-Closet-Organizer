@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Closet Organizer</title>
+    <link rel="stylesheet" href="style.css">
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.10.2/main.min.css' rel='stylesheet' />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.10.2/main.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <header>
+        <h1>Virtual Closet Organizer</h1>
+        <nav>
+            <button id="home-button">Home</button>
+            <button id="items-button">View Items</button>
+            <button id="upload-button">Add an Item</button>
+            <button id="planner-button">Outfit Planner</button>
+            <button id="ai-outfits-button">AI Outfits</button>
+            <button id="packing-button">Packing List</button>
+        </nav>
+    </header>
+    <main>
+        <section id="home-section" class="hidden">
+            <div class="home-content">
+                <h2>Welcome to Your Virtual Closet</h2>
+                <p class="tagline">Organize, Plan, and Style with Ease</p>
+                <div class="features">
+                    <div class="feature-item">
+                        <i class="fas fa-tshirt"></i>
+                        <h3>View Items</h3>
+                        <p>Browse your virtual wardrobe</p>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-plus-circle"></i>
+                        <h3>Add an Item</h3>
+                        <p>Expand your digital closet</p>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-palette"></i>
+                        <h3>Outfit Planner</h3>
+                        <p>Create stylish combinations</p>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-robot"></i>
+                        <h3>AI Outfits</h3>
+                        <p>Get smart style suggestions</p>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-suitcase"></i>
+                        <h3>Packing List</h3>
+                        <p>Prepare for your trips effortlessly</p>
+                    </div>
+                </div>
+                <button id="get-started" class="cta-button">Get Started</button>
+            </div>
+        </section>
+        <section id="upload-section" class="hidden">
+            <input type="file" id="file-input" accept="image/*">
+            <button id="remove-background">Remove Background</button>
+            <input type="text" id="description" placeholder="Add a description" required>
+            <select id="color">
+                <option value="">Select a color</option>
+                <option value="red">Red</option>
+                <option value="blue">Blue</option>
+                <option value="green">Green</option>
+                <option value="yellow">Yellow</option>
+                <option value="purple">Purple</option>
+                <option value="pink">Pink</option>
+                <option value="orange">Orange</option>
+                <option value="brown">Brown</option>
+                <option value="black">Black</option>
+                <option value="white">White</option>
+                <option value="gray">Gray</option>
+            </select>
+            <select id="category">
+                <option value="shirt">Shirt</option>
+                <option value="pant">Pant</option>
+                <option value="shoes">Shoes</option>
+                <option value="accessories">Accessories</option>
+            </select>
+            <button id="submit-item">Submit</button>
+        </section>
+        <section id="items-section" class="hidden">
+            <div class="section-header">
+                <h2>Your Wardrobe Items</h2>
+                <p class="section-description">Here you can view all the items in your virtual closet. You can delete items by clicking the delete button on each item card.</p>
+            </div>
+            <div id="items-grid"></div>
+            <div class="empty-state hidden">
+                <p>Your closet is empty. Start by adding some items!</p>
+                <button id="add-first-item" class="cta-button">Add Your First Item</button>
+            </div>
+        </section>
+        <section id="planner-section" class="hidden">
+            <div id="available-items"></div>
+            <div id="outfit-creator">
+                <h2>Create Outfit</h2>
+                <div id="outfit-items"></div>
+                <button id="save-outfit">Save Outfit</button>
+            </div>
+            <div id="saved-outfits"></div>
+            <button id="create-outfit">Create Outfit</button>
+            <div id="packing-items"></div>
+        </section>
+        <section id="packing-section" class="hidden">
+            <div id="available-items"></div>
+            <div id="outfit-creator">
+                <h2>Create Outfit</h2>
+                <div id="outfit-items"></div>
+                <button id="save-outfit">Save Outfit</button>
+            </div>
+            <div id="saved-outfits"></div>
+            <button id="create-outfit">Create Outfit</button>
+            <div id="packing-items"></div>
+        </section>
+        <section id="ai-outfits-section" class="hidden">
+            <h2>AI-Generated Outfits</h2>
+            <div id="ai-outfits-grid"></div>
+        </section>
+    </main>
+    <script src="script.js"></script>
+</body>
+
+</html>
